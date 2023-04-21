@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 
 def norm(img):
-    img = img/255
+    img = img/255.0
     return img.reshape(-1,28*28)
 
 def get_train_data():
