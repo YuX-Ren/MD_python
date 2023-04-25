@@ -1,5 +1,5 @@
 import numpy as np
-from dataset import get_train_data,get_test_data
+from minist_dataset import get_train_data,get_test_data
 from perceptron import Perceptron,Loss
 import tqdm 
 if __name__ == "__main__":
