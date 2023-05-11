@@ -23,12 +23,17 @@ def TBODY_gradient(positions):
         for j in range(i+1, N):
             r_ij = positions[j] - positions[i]
             r = np.linalg.norm(r_ij)
-            dV_dr = -r
-            # dV_dr = -1/r**2
+            # dV_dr = -r
+            dV_dr = -1/r**2
             force = -ks*dV_dr * r_ij / r
             forces[i] += force
             forces[j] -= force
     return forces
+
+def integrate_Beeman(positions, velocities, masses, forces, dt):
+    new_positions = positions + dt * velocities + dt * dt * 2/3 * TBODY_gradient(positions)/masses-1/6* dt *dt *forces/masses
+    new_velocities = velocities + dt * 1/6 * (2 * TBODY_gradient(new_positions)/masses + 5 * TBODY_gradient(positions)/masses-forces/masses)
+    return new_positions, new_velocities, TBODY_gradient(positions)
 
 def integrate_runge_kutta(positions, velocities, masses, forces, dt):
     """
@@ -60,7 +65,7 @@ def integrate_runge_kutta(positions, velocities, masses, forces, dt):
 
 
 # Simulation parameters
-N = 10 # number of particles
+N = 3 # number of particles
 dt = 0.01
 n_steps = 1000
 
@@ -69,7 +74,7 @@ n_steps = 1000
 
 positions = np.random.rand(N, 3)*10
 positions = positions-positions.sum(axis=0)/N
-velocities = np.random.rand(N, 3)*10
+velocities = np.random.rand(N, 3)
 velocities = velocities-velocities.sum(axis=0)/N
 
 
@@ -89,7 +94,7 @@ forces = TBODY_gradient(positions)
 r=np.zeros((n_steps+1, N, 3))
 r[0]=positions
 for step in range(n_steps):
-    positions, velocities, forces = integrate_runge_kutta(positions, velocities, masses, forces, dt)
+    positions, velocities, forces = integrate_Beeman(positions, velocities, masses, forces, dt)
     r[step+1]=positions
 
 
