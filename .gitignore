@@ -3,8 +3,7 @@ data
 ala15.pdb
 ala15.psf
 FF.xml
-test.pkl
-trajectory.dcd
-test.py
+test.*
 work.md
+*.dcd
 __pycache__

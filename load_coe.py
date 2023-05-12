@@ -4,7 +4,7 @@ load coeficients from file
 import numpy as np
 import xml.etree.ElementTree as ET
 kcal = 6.9501*1e-5
-atom_type_mapping = {"CA": 0,"CB":1,"C": 2, "N": 3, "O":4, "O3":5,"H":6,"H2":6,"H3":6,"HB3":6,"HB2":6,"HB1":6,"HA":6}  # Add other atom types if necessary
+atom_type_mapping = {"CA": 0,"CB":1,"C": 2, "N": 3,"N2":3, "O":4, "OH":5,"H":6,"H2":6,"H3":6,"H4":6,"H5":6,"HB3":6,"HB2":6,"HB1":6,"HA":6}  # Add other atom types if necessary
 n_atom_types = len(atom_type_mapping)
 bond_coeffs = np.zeros((n_atom_types, n_atom_types), dtype=float)
 bond_lengths = np.zeros((n_atom_types, n_atom_types), dtype=float)
@@ -60,4 +60,5 @@ def parse_forcefield_xml(file_path):
             multiplicity[atom_type_mapping[type2], atom_type_mapping[type3]] = periodicity1
     return bond_coeffs,bond_lengths, angle_coeffs, thetas,dihedral_coeffs,phis,multiplicity
 
+bond_coeffs,bond_lengths, angle_coeffs, thetas,dihedral_coeffs,phis,multiplicity = parse_forcefield_xml("FF.xml")
 
