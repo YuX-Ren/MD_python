@@ -74,8 +74,8 @@ class EnergyModel(nn.Module):
         for i,bond in enumerate(self.bonds):
             (atom1_type, atom1_index), (atom2_type, atom2_index) = bond
             # Use bond_coeffs and bond_lengths for your specific system
-            if(atom1_index>atom2_index):
-                self.charges_pair[atom2_index,atom1_index] = 0
+            # if(atom1_index>atom2_index):
+                # self.charges_pair[atom2_index,atom1_index] = 0
                 # self.epsilon[atom2_index,atom1_index] = 0
             if(bond_coeffs[atom2_type,atom1_type]!=0):
                 self.k_bond[i] = bond_coeffs[atom2_type,atom1_type]

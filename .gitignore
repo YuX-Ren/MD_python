@@ -4,6 +4,8 @@ ala15.pdb
 ala15.psf
 FF.xml
 test.*
-work.md
+*.md
 *.dcd
 __pycache__
+*.png
+*.gif

@@ -23,8 +23,8 @@ def TBODY_gradient(positions):
         for j in range(i+1, N):
             r_ij = positions[j] - positions[i]
             r = np.linalg.norm(r_ij)
-            # dV_dr = -r
-            dV_dr = -1/r**2
+            dV_dr = -r
+            # dV_dr = -1/r**2
             force = -ks*dV_dr * r_ij / r
             forces[i] += force
             forces[j] -= force
@@ -72,17 +72,17 @@ n_steps = 1000
 
 # Initialize positions, velocities, and masses
 
-positions = np.random.rand(N, 3)*10
-positions = positions-positions.sum(axis=0)/N
-velocities = np.random.rand(N, 3)
-velocities = velocities-velocities.sum(axis=0)/N
+# positions = np.random.rand(N, 3)*10
+# positions = positions-positions.sum(axis=0)/N
+# velocities = np.random.rand(N, 3)
+# velocities = velocities-velocities.sum(axis=0)/N
 
 
 # positions = np.array([[2,1],[-1,1],[1,-1]],dtype=np.float64)
-# positions = np.random.rand(N, 2)*10
-# positions = positions-positions.sum(axis=0)/N
-# velocities = np.random.rand(N, 2)*10
-# velocities = velocities-velocities.sum(axis=0)/N
+positions = np.random.rand(N, 2)*10
+positions = positions-positions.sum(axis=0)/N
+velocities = np.random.rand(N, 2)*10
+velocities = velocities-velocities.sum(axis=0)/N
 # print(velocities.sum(axis=0))
 # velocities = np.zeros((N,2))
 
@@ -91,7 +91,7 @@ masses = np.ones(N)
 masses=np.expand_dims(masses, axis=1)
 forces = TBODY_gradient(positions)
 
-r=np.zeros((n_steps+1, N, 3))
+r=np.zeros((n_steps+1, N, 2))
 r[0]=positions
 for step in range(n_steps):
     positions, velocities, forces = integrate_Beeman(positions, velocities, masses, forces, dt)
@@ -103,38 +103,39 @@ for step in range(n_steps):
 
 # # Create a 3D scatter plot
 
-# fig, ax = plt.subplots(figsize=(6,6))
+fig, ax = plt.subplots(figsize=(6,6))
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection="3d")
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection="3d")
 
-scatter = ax.scatter([], [], [])
+# scatter = ax.scatter([], [], [])
 
-# scatter = ax.scatter(r[0,:,0], r[0,:,1], marker='.', s=1000)
+scatter = ax.scatter(r[0,:,0], r[0,:,1], marker='.', s=1000)
 
 # Set plot limits (adjust these based on the expected range of positions)
-# ax.set_xlim(-3, 3)
-# ax.set_ylim(-3, 3)
+ax.set_xlim(-3, 3)
+ax.set_ylim(-3, 3)
 
 
-ax.set_xlim(-10, 10)
-ax.set_ylim(-10, 10)
-ax.set_zlim(-10, 10)
+# ax.set_xlim(-10, 10)
+# ax.set_ylim(-10, 10)
+# ax.set_zlim(-10, 10)
 
 # Update function for the animation
 def update(frame):
-    # scatter.set_offsets(r[frame]) 
+    scatter.set_offsets(r[frame]) 
 
 
-    positions = r[frame]
-    scatter._offsets3d = (positions[:, 0], positions[:, 1], positions[:, 2])
+    # positions = r[frame]
+    # scatter._offsets3d = (positions[:, 0], positions[:, 1], positions[:, 2])
     return scatter,
 
 # Create the animation
 ani = animation.FuncAnimation(fig, update, frames=len(r), interval=0.01, blit=False,)
-
+from matplotlib.animation import PillowWriter
+ani.save('animation.gif', writer=PillowWriter(fps=25))
 # Display the animation
-plt.show()
+plt.close()
 # Run the simulation
 # ani.save('animation.gif')
 # plt.close()

@@ -14,6 +14,20 @@ class Transformer():
         w1 = np.random.randn(dim, dim*2)
         w2 = np.random.randn(dim*2, 2)
         self.parameter = [w1,  w2, attention_q,attention_k,attention_v,oproj,embedding_layer]
+    
+    def positional_encoding(seq_len,dim):
+        encoding = np.ones((seq_len, dim))
+        ls = seq_len + 1
+        le = 2 * seq_len + 1
+        for i in range(0, seq_len):
+            for j in range(0, dim):
+                if j % 2 == 0:
+                    encoding[i, j] = np.sin(i / np.power(10000, 2 * j / dim))
+                else:
+                    encoding[i, j] = np.cos(i / np.power(10000, 2 * j / dim))
+        return encoding
+        
+
     def softmax(self, x,axis):
         x_exp = np.exp(x - np.max(x, axis=axis, keepdims=True))
         return x_exp / np.sum(x_exp, axis=axis, keepdims=True)
@@ -39,7 +53,7 @@ class Transformer():
 
     def forward(self, x):
         self.input = x
-        self.x = self.embedding(x)
+        self.x = self.embedding(x) + self.positional_encoding(self.seq_len,self.dim)
         self.h0 = self.multihead_attention(self.x)
         self.h1 = self.relu(self.h0.sum(axis=1) @ self.parameter[0])
         self.out = self.softmax(self.h1@ self.parameter[1],axis=1)
