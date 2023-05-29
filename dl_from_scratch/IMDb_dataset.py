@@ -10,7 +10,7 @@ def tokenizer(sentence):
     return tokens
 
 
-def read_imdb(folder, data_root="./data/aclImdb"):
+def read_imdb(folder, data_root="/data/mon3ter/IMDB/aclImdb"):
     """
     data: list of [string, label]
     """

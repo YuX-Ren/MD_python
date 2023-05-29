@@ -1,9 +1,10 @@
 md_python
 data
-ala15.pdb
+*.pdb
+*.pt
 ala15.psf
-FF.xml
 test.*
+*.pdf
 *.md
 *.dcd
 __pycache__

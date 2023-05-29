@@ -15,7 +15,7 @@ class Transformer():
         w2 = np.random.randn(dim*2, 2)
         self.parameter = [w1,  w2, attention_q,attention_k,attention_v,oproj,embedding_layer]
     
-    def positional_encoding(seq_len,dim):
+    def positional_encoding(self,seq_len,dim):
         encoding = np.ones((seq_len, dim))
         ls = seq_len + 1
         le = 2 * seq_len + 1

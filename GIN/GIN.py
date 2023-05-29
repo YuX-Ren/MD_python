@@ -11,7 +11,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as data
 import torch.optim as optim
-from torch_geometric.nn import GINConv, global_add_pool
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -33,19 +32,20 @@ class MLP(nn.Module):
 class GINLayer(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(GINLayer, self).__init__()
-        self.mlp = MLP(input_dim, hidden_dim, hidden_dim)
+        self.mlp1 = MLP(input_dim, input_dim, input_dim)
+        self.mlp2 = MLP(input_dim, hidden_dim, hidden_dim)
 
     def forward(self, x, edge_index):
-        num_nodes = x.size(0)
+        num_nodes = x.size(1)
         self_loop_index = torch.stack([torch.arange(0, num_nodes, dtype=torch.long), torch.arange(0, num_nodes, dtype=torch.long)], dim=1).to(x.device)
-        edge_index_with_self_loops = torch.cat([edge_index, self_loop_index], dim=0)
-
-        # aggregate neighbor features
-        agg_neighbor_feats = torch.zeros([num_nodes, x.size(1)]).to(x.device)
-        row, col = edge_index_with_self_loops.t()
-        agg_neighbor_feats[row] += x[col]
-
-        out = self.mlp(agg_neighbor_feats)
+        self_loop_index = self_loop_index.unsqueeze(0).repeat(x.size(0), 1, 1)  # Repeat for each graph in the batch
+        edge_index_with_self_loops = torch.cat([edge_index, self_loop_index], dim=1)
+        # Aggregate neighbor features
+        agg_neighbor_feats = torch.zeros_like(x).to(x.device)
+        for idx in range(x.size(0)):  # Loop through each graph in the batch
+            row, col = edge_index_with_self_loops[idx].t()  # Transpose
+            agg_neighbor_feats[idx, row] += self.mlp1(x[idx, col]-x[idx, row])
+        out = self.mlp2(agg_neighbor_feats)
         return out
 
 
@@ -85,7 +85,8 @@ class calculate_forces(nn.Module):
         super(calculate_forces, self).__init__()
         self.atoms,  self.bonds, self.angles, self.dihedrals, self.charges = self.get_topology_data(universe)
         self.embedding = nn.Embedding(n_atom_types, dim)
-        self.gin = GIN(32+3, 32, layers)
+        self.gin1 = GIN(32+3, 32, layers)
+        self.gin2 = GIN(32+3, 32, layers)
     def get_topology_data(self, universe):
         atoms_list = torch.tensor([lj_atom_type_mapping[atom.name] for atom in universe.atoms]).to(device)
         bonds = torch.tensor([[bond[0].index, bond[1].index] for bond in universe.bonds]).to(device)
@@ -96,14 +97,35 @@ class calculate_forces(nn.Module):
 
         charges = torch.tensor([atom.charge for atom in universe.atoms]).unsqueeze(dim=1).to(device)
         return atoms_list,  bonds, angles, dihedrals, charges
+    def create_edge_index_by_nearest(self,coordinates, k):
+        n_edge_index = []
+        for i in range(coordinates.size(0)):
+            dists = torch.cdist(coordinates[i], coordinates[i])  # calculate distance matrix
+            _, nearest_k_indices = dists.topk(k, dim=1, largest=False)  # get indices of k nearest neighbors
+            source_nodes = torch.repeat_interleave(torch.arange(nearest_k_indices.size(0)), nearest_k_indices.size(1)).to(device)
+            target_nodes = nearest_k_indices.flatten().to(device)
+            edge_index = torch.stack([source_nodes, target_nodes], dim=1)
+            n_edge_index.append(edge_index)
+        
+        return torch.stack(n_edge_index, dim=0)
 
     def forward(self, positions):
-        x = torch.cat([self.embedding(self.atoms),positions], dim=1)
-        x = self.gin(x, self.bonds)
-        return x
+        embedding = self.embedding(self.atoms).unsqueeze(dim=0).repeat(positions.size(0),1,1)
+        x = torch.cat([embedding,positions], dim=2)
+        y = self.gin1(x, self.bonds.unsqueeze(0).repeat(x.size(0), 1, 1))
+        edge_index = self.create_edge_index_by_nearest(positions,k=20)
+        z = self.gin2(x, edge_index)
+        return y+z
 
 def integrate_Beeman(positions, velocities, masses, forces,cur_forces, dt,forces_func):
     new_positions = positions + dt * velocities + dt * dt * 2/3 * cur_forces/masses-1/6* dt *dt *forces/masses
-    new_forces = forces_func(new_positions)
+    new_forces = forces_func(new_positions.unsqueeze(dim=0)).squeeze(dim=0)
     new_velocities = velocities + dt * 1/6 * (2 * new_forces/masses + 5 * cur_forces/masses-forces/masses)
+    # delete old tensors
+    del positions
+    del velocities
+    del forces
+    # free up memory
+    torch.cuda.empty_cache()
+
     return new_positions, new_velocities, cur_forces, new_forces
